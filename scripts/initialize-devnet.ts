@@ -11,17 +11,21 @@
 
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-} from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import * as fs from "fs";
 import * as path from "path";
 import type { McapepePresale } from "../target/types/mcapepe_presale";
 
+import {
+  defaultWalletPath,
+  expandPath,
+  loadProjectEnv,
+} from "./env-utils";
+
 async function main() {
+  const projectRoot = path.resolve(__dirname, "..");
+  loadProjectEnv(projectRoot, { overwrite: true });
+
   const cluster = process.env.ANCHOR_PROVIDER_CLUSTER || "devnet";
   const rpcUrl =
     process.env.ANCHOR_PROVIDER_URL ||
@@ -31,12 +35,9 @@ async function main() {
         ? "https://api.devnet.solana.com"
         : "http://127.0.0.1:8899");
 
-  const walletPath =
-    process.env.ANCHOR_WALLET ||
-    path.join(
-      process.env.HOME || process.env.USERPROFILE || "",
-      ".config/solana/deployer.json",
-    );
+  const walletPath = expandPath(
+    process.env.ANCHOR_WALLET || defaultWalletPath(),
+  );
 
   process.env.ANCHOR_WALLET = walletPath;
   process.env.ANCHOR_PROVIDER_URL = rpcUrl;
@@ -53,12 +54,14 @@ async function main() {
   });
   anchor.setProvider(provider);
 
-  const idl = JSON.parse(
-    fs.readFileSync(
-      path.join(__dirname, "../target/idl/mcapepe_presale.json"),
-      "utf-8",
-    ),
-  );
+  const idlPath = path.join(process.cwd(), "target/idl/mcapepe_presale.json");
+  if (!fs.existsSync(idlPath)) {
+    throw new Error(
+      `IDL not found at ${idlPath}. Run \`anchor build\` first.`,
+    );
+  }
+
+  const idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
 
   const program = new Program(
     idl,
@@ -76,26 +79,23 @@ async function main() {
     return;
   }
 
-  const [solVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from("sol_vault")],
-    program.programId,
-  );
-
-  const sig = await program.methods
-    .initialize()
-    .accounts({
-      admin: wallet.publicKey,
-      presaleConfig,
-      solVault,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc();
+  // Anchor 0.32: `.accounts()` only lists accounts the client cannot resolve
+  // (PDAs + fixed-address accounts are resolved from the IDL).
+  const sig = await program.methods.initialize().accounts({
+    admin: wallet.publicKey,
+  }).rpc();
 
   console.log("initialize tx:", sig);
   console.log("presaleConfig:", presaleConfig.toBase58());
 }
 
 main().catch((e) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (msg.includes("does not exist") || msg.includes("Program account")) {
+    console.error(
+      "The program is not deployed on this cluster yet. Run `yarn deploy:devnet` first, then retry.",
+    );
+  }
   console.error(e);
   process.exit(1);
 });

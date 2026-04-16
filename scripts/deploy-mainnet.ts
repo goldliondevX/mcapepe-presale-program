@@ -13,7 +13,16 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 
+import {
+  defaultWalletPath,
+  expandPath,
+  loadProjectEnv,
+} from "./env-utils";
+
 async function main() {
+  const projectRoot = path.resolve(__dirname, "..");
+  loadProjectEnv(projectRoot, { overwrite: true });
+
   const rpcUrl =
     process.env.ANCHOR_PROVIDER_URL ||
     process.env.MAINNET_RPC_URL ||
@@ -21,12 +30,9 @@ async function main() {
 
   const connection = new Connection(rpcUrl, "confirmed");
 
-  const walletPath =
-    process.env.ANCHOR_WALLET ||
-    path.join(
-      process.env.HOME || process.env.USERPROFILE || "",
-      ".config/solana/deployer.json",
-    );
+  const walletPath = expandPath(
+    process.env.ANCHOR_WALLET || defaultWalletPath(),
+  );
 
   if (!fs.existsSync(walletPath)) {
     throw new Error(`Wallet not found at ${walletPath}`);
@@ -44,8 +50,6 @@ async function main() {
     throw new Error("Insufficient SOL for deployment");
   }
 
-  const projectRoot = path.resolve(__dirname, "..");
-
   console.log("\nanchor build");
   execSync("anchor build", { cwd: projectRoot, stdio: "inherit" });
 
@@ -53,7 +57,12 @@ async function main() {
   execSync("anchor deploy --provider.cluster mainnet", {
     cwd: projectRoot,
     stdio: "inherit",
-    env: { ...process.env, ANCHOR_WALLET: walletPath },
+    env: {
+      ...process.env,
+      ANCHOR_WALLET: walletPath,
+      ANCHOR_PROVIDER_URL: rpcUrl,
+      ANCHOR_PROVIDER_CLUSTER: "mainnet",
+    },
   });
 
   console.log("\nDone. Run: yarn initialize:mainnet");

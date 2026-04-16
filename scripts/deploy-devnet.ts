@@ -13,19 +13,32 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 
-async function main() {
-  const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+import {
+  defaultWalletPath,
+  expandPath,
+  loadProjectEnv,
+} from "./env-utils";
 
-  const walletPath =
-    process.env.ANCHOR_WALLET ||
-    path.join(
-      process.env.HOME || process.env.USERPROFILE || "",
-      ".config/solana/deployer.json",
-    );
+async function main() {
+  const projectRoot = path.resolve(__dirname, "..");
+  loadProjectEnv(projectRoot, { overwrite: true });
+
+  const rpcUrl =
+    process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  const connection = new Connection(rpcUrl, "confirmed");
+
+  const walletPath = expandPath(
+    process.env.ANCHOR_WALLET || defaultWalletPath(),
+  );
 
   if (!fs.existsSync(walletPath)) {
-    throw new Error(`Wallet not found at ${walletPath}`);
+    throw new Error(
+      `Wallet not found at ${walletPath}. Fix ANCHOR_WALLET in .env or use default ${defaultWalletPath()}.`,
+    );
   }
+
+  console.log(`RPC: ${rpcUrl}`);
+  console.log(`Wallet file: ${walletPath}`);
 
   const walletKeypair = Keypair.fromSecretKey(
     Buffer.from(JSON.parse(fs.readFileSync(walletPath, "utf-8"))),
@@ -47,8 +60,6 @@ async function main() {
     console.log(`New balance: ${balance / LAMPORTS_PER_SOL} SOL`);
   }
 
-  const projectRoot = path.resolve(__dirname, "..");
-
   console.log("\nanchor build");
   execSync("anchor build", { cwd: projectRoot, stdio: "inherit" });
 
@@ -56,7 +67,12 @@ async function main() {
   execSync("anchor deploy --provider.cluster devnet", {
     cwd: projectRoot,
     stdio: "inherit",
-    env: { ...process.env, ANCHOR_WALLET: walletPath },
+    env: {
+      ...process.env,
+      ANCHOR_WALLET: walletPath,
+      ANCHOR_PROVIDER_URL: rpcUrl,
+      ANCHOR_PROVIDER_CLUSTER: "devnet",
+    },
   });
 
   console.log("\nDone. Run: yarn initialize:devnet");
