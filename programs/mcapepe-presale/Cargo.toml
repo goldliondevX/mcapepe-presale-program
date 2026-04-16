@@ -1,0 +1,23 @@
+[package]
+name = "mcapepe-presale"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mcapepe_presale"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+cpi = ["no-entrypoint"]
+default = []
+anchor-debug = []
+custom-panic = []
+custom-heap = []
+
+[dependencies]
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+anchor-spl = "0.32.1"
