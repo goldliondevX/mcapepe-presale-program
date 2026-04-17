@@ -9,7 +9,7 @@ mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("z47mh2w12NQ1KwT83JESneaSRHW7mbm4qzDnNBR6woN");
+declare_id!("7FQtBKKbwZsroxZ1inaQNdQiQKoy7shgGtMagVDVx769");
 
 #[program]
 pub mod mcapepe_presale {

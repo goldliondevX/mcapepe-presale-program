@@ -6,13 +6,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-mcapepe_presale = "z47mh2w12NQ1KwT83JESneaSRHW7mbm4qzDnNBR6woN"
+mcapepe_presale = "7FQtBKKbwZsroxZ1inaQNdQiQKoy7shgGtMagVDVx769"
 
 [programs.localnet]
-mcapepe_presale = "z47mh2w12NQ1KwT83JESneaSRHW7mbm4qzDnNBR6woN"
+mcapepe_presale = "7FQtBKKbwZsroxZ1inaQNdQiQKoy7shgGtMagVDVx769"
 
 [programs.mainnet]
-mcapepe_presale = "z47mh2w12NQ1KwT83JESneaSRHW7mbm4qzDnNBR6woN"
+mcapepe_presale = "7FQtBKKbwZsroxZ1inaQNdQiQKoy7shgGtMagVDVx769"
 
 [registry]
 url = "https://api.apr.dev"
