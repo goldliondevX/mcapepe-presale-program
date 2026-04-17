@@ -5,7 +5,6 @@ use crate::errors::ErrorCode;
 use crate::state::PresaleConfig;
 
 #[derive(Accounts)]
-#[instruction(amount: u64)]
 pub struct WithdrawSpl<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -42,12 +41,14 @@ pub struct WithdrawSpl<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub(crate) fn handler(ctx: Context<WithdrawSpl>, amount: u64) -> Result<()> {
-    require!(amount > 0, ErrorCode::InvalidAmount);
+pub(crate) fn handler(ctx: Context<WithdrawSpl>) -> Result<()> {
     require!(
         ctx.accounts.presale_config.treasury != Pubkey::default(),
         ErrorCode::InvalidTreasury
     );
+
+    let amount = ctx.accounts.vault_token_account.amount;
+    require!(amount > 0, ErrorCode::NothingToWithdraw);
 
     let bump = ctx.bumps.vault_auth;
     let seeds: &[&[u8]] = &[b"vault_auth", &[bump]];

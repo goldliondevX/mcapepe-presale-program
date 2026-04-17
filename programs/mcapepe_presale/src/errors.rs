@@ -22,4 +22,6 @@ pub enum ErrorCode {
     InvalidMint,
     #[msg("Vault token account mint mismatch")]
     InvalidVault,
+    #[msg("Nothing to withdraw: vault is empty")]
+    NothingToWithdraw,
 }

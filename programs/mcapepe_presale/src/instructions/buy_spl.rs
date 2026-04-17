@@ -8,6 +8,7 @@ use crate::state::{PresaleConfig, UserDeposit};
 #[instruction(amount: u64)]
 pub struct BuySpl<'info> {
     #[account(
+        mut,
         seeds = [b"config"],
         bump = presale_config.bump,
     )]
@@ -80,6 +81,15 @@ pub(crate) fn handler(ctx: Context<BuySpl>, amount: u64) -> Result<()> {
     }
     dep.amount = dep
         .amount
+        .checked_add(amount)
+        .ok_or(ErrorCode::Overflow)?;
+
+    let slot = ctx
+        .accounts
+        .presale_config
+        .mint_slot_index(&mint_key)
+        .ok_or(ErrorCode::MintNotAllowed)?;
+    ctx.accounts.presale_config.total_spl_deposited[slot] = ctx.accounts.presale_config.total_spl_deposited[slot]
         .checked_add(amount)
         .ok_or(ErrorCode::Overflow)?;
 

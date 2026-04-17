@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::rent::Rent;
+use anchor_lang::solana_program::sysvar::Sysvar;
 
 use crate::errors::ErrorCode;
 use crate::state::PresaleConfig;
 
 #[derive(Accounts)]
-#[instruction(amount: u64)]
 pub struct WithdrawNativeSol<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -25,8 +26,7 @@ pub struct WithdrawNativeSol<'info> {
     pub treasury: AccountInfo<'info>,
 }
 
-pub(crate) fn handler(ctx: Context<WithdrawNativeSol>, amount: u64) -> Result<()> {
-    require!(amount > 0, ErrorCode::InvalidAmount);
+pub(crate) fn handler(ctx: Context<WithdrawNativeSol>) -> Result<()> {
     require!(
         ctx.accounts.presale_config.treasury != Pubkey::default(),
         ErrorCode::InvalidTreasury
@@ -34,10 +34,15 @@ pub(crate) fn handler(ctx: Context<WithdrawNativeSol>, amount: u64) -> Result<()
 
     let vault = ctx.accounts.sol_vault.to_account_info();
     let treasury = ctx.accounts.treasury.to_account_info();
-    require!(vault.lamports() >= amount, ErrorCode::InvalidAmount);
+    let min_rent = Rent::get()?.minimum_balance(vault.data_len());
+    let withdraw_lamports = vault
+        .lamports()
+        .checked_sub(min_rent)
+        .ok_or(ErrorCode::NothingToWithdraw)?;
+    require!(withdraw_lamports > 0, ErrorCode::NothingToWithdraw);
 
-    **vault.try_borrow_mut_lamports()? -= amount;
-    **treasury.try_borrow_mut_lamports()? += amount;
+    **vault.try_borrow_mut_lamports()? -= withdraw_lamports;
+    **treasury.try_borrow_mut_lamports()? += withdraw_lamports;
 
     Ok(())
 }

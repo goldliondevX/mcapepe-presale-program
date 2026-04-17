@@ -8,7 +8,6 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
-  SystemProgram,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -105,9 +104,6 @@ describe("mcapepe_presale", () => {
       .initialize()
       .accounts({
         admin: admin.publicKey,
-        presaleConfig: pda.presaleConfig(),
-        solVault: pda.solVault(),
-        systemProgram: SystemProgram.programId,
       })
       .rpc();
 
@@ -122,19 +118,7 @@ describe("mcapepe_presale", () => {
       .addAllowedMint()
       .accounts({
         admin: admin.publicKey,
-        presaleConfig: pda.presaleConfig(),
         mint,
-        vaultAuth: pda.vaultAuth(),
-        vaultTokenAccount: getAssociatedTokenAddressSync(
-          mint,
-          pda.vaultAuth(),
-          true,
-          TOKEN_PROGRAM_ID,
-          ASSOCIATED_TOKEN_PROGRAM_ID,
-        ),
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
       })
       .rpc();
 
@@ -162,15 +146,10 @@ describe("mcapepe_presale", () => {
     await program.methods
       .buySpl(new BN(100))
       .accounts({
-        presaleConfig: pda.presaleConfig(),
         user: user.publicKey,
         mint,
         userTokenAccount: userAta,
-        vaultAuth: pda.vaultAuth(),
         vaultTokenAccount: vaultAta,
-        userDeposit: pda.userDepositSpl(user.publicKey, mint),
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
       })
       .signers([user])
       .rpc();
@@ -178,15 +157,10 @@ describe("mcapepe_presale", () => {
     await program.methods
       .buySpl(new BN(50))
       .accounts({
-        presaleConfig: pda.presaleConfig(),
         user: user.publicKey,
         mint,
         userTokenAccount: userAta,
-        vaultAuth: pda.vaultAuth(),
         vaultTokenAccount: vaultAta,
-        userDeposit: pda.userDepositSpl(user.publicKey, mint),
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
       })
       .signers([user])
       .rpc();
@@ -195,17 +169,16 @@ describe("mcapepe_presale", () => {
       pda.userDepositSpl(user.publicKey, mint),
     );
     assert.equal(dep.amount.toString(), "150");
+
+    const cfg = await program.account.presaleConfig.fetch(pda.presaleConfig());
+    assert.equal(cfg.totalSplDeposited[0].toString(), "150");
   });
 
   it("buy_native_sol accumulates native deposit", async () => {
     await program.methods
       .buyNativeSol(new BN(LAMPORTS_PER_SOL / 10))
       .accounts({
-        presaleConfig: pda.presaleConfig(),
         user: user.publicKey,
-        solVault: pda.solVault(),
-        userDeposit: pda.userDepositNative(user.publicKey),
-        systemProgram: SystemProgram.programId,
       })
       .signers([user])
       .rpc();
@@ -213,11 +186,7 @@ describe("mcapepe_presale", () => {
     await program.methods
       .buyNativeSol(new BN(LAMPORTS_PER_SOL / 20))
       .accounts({
-        presaleConfig: pda.presaleConfig(),
         user: user.publicKey,
-        solVault: pda.solVault(),
-        userDeposit: pda.userDepositNative(user.publicKey),
-        systemProgram: SystemProgram.programId,
       })
       .signers([user])
       .rpc();
@@ -229,6 +198,9 @@ describe("mcapepe_presale", () => {
       new BN(LAMPORTS_PER_SOL / 20),
     );
     assert.equal(dep.amount.toString(), expected.toString());
+
+    const cfg = await program.account.presaleConfig.fetch(pda.presaleConfig());
+    assert.equal(cfg.totalNativeSolDeposited.toString(), expected.toString());
   });
 
   it("set_treasury and admin withdraw SPL + SOL", async () => {
@@ -236,7 +208,6 @@ describe("mcapepe_presale", () => {
       .setTreasury(treasury.publicKey)
       .accounts({
         admin: admin.publicKey,
-        presaleConfig: pda.presaleConfig(),
       })
       .rpc();
 
@@ -256,34 +227,28 @@ describe("mcapepe_presale", () => {
       )
     ).address;
 
+    const totalsBefore = await program.account.presaleConfig.fetch(
+      pda.presaleConfig(),
+    );
+
     await program.methods
-      .withdrawSpl(new BN(150))
+      .withdrawSpl()
       .accounts({
         admin: admin.publicKey,
-        presaleConfig: pda.presaleConfig(),
         mint,
-        vaultAuth: pda.vaultAuth(),
         vaultTokenAccount: vaultAta,
         treasuryTokenAccount: treasuryAta,
-        tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const solBalBefore = await provider.connection.getBalance(
       treasury.publicKey,
     );
-    const vaultLamports = await provider.connection.getBalance(pda.solVault());
-    const withdrawSol = Math.min(
-      vaultLamports,
-      Math.floor(LAMPORTS_PER_SOL / 50),
-    );
 
     await program.methods
-      .withdrawNativeSol(new BN(withdrawSol))
+      .withdrawNativeSol()
       .accounts({
         admin: admin.publicKey,
-        presaleConfig: pda.presaleConfig(),
-        solVault: pda.solVault(),
         treasury: treasury.publicKey,
       })
       .rpc();
@@ -292,6 +257,18 @@ describe("mcapepe_presale", () => {
       treasury.publicKey,
     );
     assert.isAbove(solBalAfter, solBalBefore);
+
+    const totalsAfter = await program.account.presaleConfig.fetch(
+      pda.presaleConfig(),
+    );
+    assert.equal(
+      totalsAfter.totalSplDeposited[0].toString(),
+      totalsBefore.totalSplDeposited[0].toString(),
+    );
+    assert.equal(
+      totalsAfter.totalNativeSolDeposited.toString(),
+      totalsBefore.totalNativeSolDeposited.toString(),
+    );
   });
 
   it("rejects buy_spl for disallowed mint", async () => {
@@ -329,15 +306,10 @@ describe("mcapepe_presale", () => {
       await program.methods
         .buySpl(new BN(1))
         .accounts({
-          presaleConfig: pda.presaleConfig(),
           user: user.publicKey,
           mint: badMint,
           userTokenAccount: userAta.address,
-          vaultAuth: pda.vaultAuth(),
           vaultTokenAccount: vaultAta,
-          userDeposit: pda.userDepositSpl(user.publicKey, badMint),
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
         })
         .signers([user])
         .rpc();
@@ -366,15 +338,12 @@ describe("mcapepe_presale", () => {
     let failed = false;
     try {
       await program.methods
-        .withdrawSpl(new BN(1))
+        .withdrawSpl()
         .accounts({
           admin: user.publicKey,
-          presaleConfig: pda.presaleConfig(),
           mint,
-          vaultAuth: pda.vaultAuth(),
           vaultTokenAccount: vaultAta,
           treasuryTokenAccount: treasuryAta,
-          tokenProgram: TOKEN_PROGRAM_ID,
         })
         .signers([user])
         .rpc();

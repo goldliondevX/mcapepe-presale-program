@@ -2,13 +2,14 @@ use anchor_lang::prelude::*;
 
 mod consts;
 mod errors;
+mod events;
 mod instructions;
 mod state;
 
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("73vGsAFzbiHYQSuX42vvG71nqizWFotLHpsedd7anPLX");
+declare_id!("z47mh2w12NQ1KwT83JESneaSRHW7mbm4qzDnNBR6woN");
 
 #[program]
 pub mod mcapepe_presale {
@@ -34,11 +35,11 @@ pub mod mcapepe_presale {
         instructions::buy_native_sol::handler(ctx, amount)
     }
 
-    pub fn withdraw_spl(ctx: Context<WithdrawSpl>, amount: u64) -> Result<()> {
-        instructions::withdraw_spl::handler(ctx, amount)
+    pub fn withdraw_spl(ctx: Context<WithdrawSpl>) -> Result<()> {
+        instructions::withdraw_spl::handler(ctx)
     }
 
-    pub fn withdraw_native_sol(ctx: Context<WithdrawNativeSol>, amount: u64) -> Result<()> {
-        instructions::withdraw_native_sol::handler(ctx, amount)
+    pub fn withdraw_native_sol(ctx: Context<WithdrawNativeSol>) -> Result<()> {
+        instructions::withdraw_native_sol::handler(ctx)
     }
 }

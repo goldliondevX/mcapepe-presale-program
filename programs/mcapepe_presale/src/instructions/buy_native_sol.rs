@@ -8,6 +8,7 @@ use crate::state::{native_sol_mint_marker, PresaleConfig, UserDeposit};
 #[instruction(amount: u64)]
 pub struct BuyNativeSol<'info> {
     #[account(
+        mut,
         seeds = [b"config"],
         bump = presale_config.bump,
     )]
@@ -61,6 +62,13 @@ pub(crate) fn handler(ctx: Context<BuyNativeSol>, amount: u64) -> Result<()> {
     }
     dep.amount = dep
         .amount
+        .checked_add(amount)
+        .ok_or(ErrorCode::Overflow)?;
+
+    ctx.accounts.presale_config.total_native_sol_deposited = ctx
+        .accounts
+        .presale_config
+        .total_native_sol_deposited
         .checked_add(amount)
         .ok_or(ErrorCode::Overflow)?;
 

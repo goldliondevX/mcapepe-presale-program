@@ -4,6 +4,7 @@ use anchor_spl::token::{Mint, Token};
 use anchor_spl::token;
 
 use crate::errors::ErrorCode;
+use crate::events::AllowedMintAdded;
 use crate::state::PresaleConfig;
 
 #[derive(Accounts)]
@@ -42,5 +43,6 @@ pub(crate) fn handler(ctx: Context<AddAllowedMint>) -> Result<()> {
     let mint_key = ctx.accounts.mint.key();
     require!(mint_key != Pubkey::default(), ErrorCode::InvalidMint);
     ctx.accounts.presale_config.try_add_mint(mint_key)?;
+    emit!(AllowedMintAdded { mint: mint_key });
     Ok(())
 }

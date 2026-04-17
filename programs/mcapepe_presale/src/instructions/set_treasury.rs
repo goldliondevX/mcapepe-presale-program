@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::ErrorCode;
+use crate::events::TreasurySet;
 use crate::state::PresaleConfig;
 
 #[derive(Accounts)]
@@ -18,6 +19,11 @@ pub struct SetTreasury<'info> {
 
 pub(crate) fn handler(ctx: Context<SetTreasury>, new_treasury: Pubkey) -> Result<()> {
     require!(new_treasury != Pubkey::default(), ErrorCode::InvalidTreasury);
+    let previous_treasury = ctx.accounts.presale_config.treasury;
     ctx.accounts.presale_config.treasury = new_treasury;
+    emit!(TreasurySet {
+        previous_treasury,
+        new_treasury,
+    });
     Ok(())
 }
