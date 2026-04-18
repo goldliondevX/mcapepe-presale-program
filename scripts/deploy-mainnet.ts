@@ -23,8 +23,8 @@ async function main() {
   const projectRoot = path.resolve(__dirname, "..");
   loadProjectEnv(projectRoot, { overwrite: true });
 
+  // Do not use `ANCHOR_PROVIDER_URL` from `.env` here — it is often a devnet RPC.
   const rpcUrl =
-    process.env.ANCHOR_PROVIDER_URL ||
     process.env.MAINNET_RPC_URL ||
     "https://api.mainnet-beta.solana.com";
 

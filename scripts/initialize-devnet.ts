@@ -6,7 +6,11 @@
  *
  * Usage:
  *   yarn initialize:devnet
- *   ANCHOR_PROVIDER_CLUSTER=mainnet yarn initialize:mainnet
+ *   yarn initialize:mainnet
+ *
+ * Note: repo `.env` often sets `ANCHOR_PROVIDER_CLUSTER=devnet`. This script
+ * preserves `ANCHOR_PROVIDER_CLUSTER` / `ANCHOR_PROVIDER_URL` from the shell
+ * (e.g. `yarn initialize:mainnet`) so they are not overwritten by `.env`.
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -22,18 +26,31 @@ import {
   loadProjectEnv,
 } from "./env-utils";
 
+/** Set after resolving cluster (used in `main().catch` help text). */
+let resolvedClusterForHelp = "devnet";
+
 async function main() {
   const projectRoot = path.resolve(__dirname, "..");
+  const presetCluster = process.env.ANCHOR_PROVIDER_CLUSTER;
+  const presetRpc = process.env.ANCHOR_PROVIDER_URL;
+
   loadProjectEnv(projectRoot, { overwrite: true });
 
-  const cluster = process.env.ANCHOR_PROVIDER_CLUSTER || "devnet";
+  const cluster =
+    presetCluster || process.env.ANCHOR_PROVIDER_CLUSTER || "devnet";
+  resolvedClusterForHelp = cluster;
+  const isMainnet =
+    cluster === "mainnet" || cluster === "mainnet-beta";
+
   const rpcUrl =
-    process.env.ANCHOR_PROVIDER_URL ||
-    (cluster === "mainnet" || cluster === "mainnet-beta"
-      ? "https://api.mainnet-beta.solana.com"
+    presetRpc ||
+    (isMainnet
+      ? process.env.MAINNET_RPC_URL ||
+        "https://api.mainnet.solana.com"
       : cluster === "devnet"
-        ? "https://api.devnet.solana.com"
-        : "http://127.0.0.1:8899");
+        ? process.env.ANCHOR_PROVIDER_URL ||
+          "https://api.devnet.solana.com"
+        : process.env.ANCHOR_PROVIDER_URL || "http://127.0.0.1:8899");
 
   const walletPath = expandPath(
     process.env.ANCHOR_WALLET || defaultWalletPath(),
@@ -41,6 +58,8 @@ async function main() {
 
   process.env.ANCHOR_WALLET = walletPath;
   process.env.ANCHOR_PROVIDER_URL = rpcUrl;
+
+  console.log(`Using cluster=${cluster} RPC=${rpcUrl}`);
 
   const connection = new Connection(rpcUrl, "confirmed");
   const wallet = new anchor.Wallet(
@@ -92,8 +111,13 @@ async function main() {
 main().catch((e) => {
   const msg = e instanceof Error ? e.message : String(e);
   if (msg.includes("does not exist") || msg.includes("Program account")) {
+    const isMainnet =
+      resolvedClusterForHelp === "mainnet" ||
+      resolvedClusterForHelp === "mainnet-beta";
     console.error(
-      "The program is not deployed on this cluster yet. Run `yarn deploy:devnet` first, then retry.",
+      isMainnet
+        ? "The program is not deployed on mainnet yet. Run `yarn deploy:mainnet`, then retry."
+        : "The program is not deployed on this cluster yet. Run `yarn deploy:devnet`, then retry.",
     );
   }
   console.error(e);
