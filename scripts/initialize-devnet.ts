@@ -2,7 +2,7 @@
 /// <reference types="node" />
 
 /**
- * Post-deploy: call `initialize` on `mcapepe_presale` (idempotent if already inited).
+ * Post-deploy: call `initialize` on `mcpepe_presale` (idempotent if already inited).
  *
  * Usage:
  *   yarn initialize:devnet
@@ -18,7 +18,7 @@ import { Program } from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import * as fs from "fs";
 import * as path from "path";
-import type { McapepePresale } from "../target/types/mcapepe_presale";
+import type { McpepePresale } from "../target/types/mcpepe_presale";
 
 import {
   defaultWalletPath,
@@ -73,7 +73,7 @@ async function main() {
   });
   anchor.setProvider(provider);
 
-  const idlPath = path.join(process.cwd(), "target/idl/mcapepe_presale.json");
+  const idlPath = path.join(process.cwd(), "target/idl/mcpepe_presale.json");
   if (!fs.existsSync(idlPath)) {
     throw new Error(
       `IDL not found at ${idlPath}. Run \`anchor build\` first.`,
@@ -85,7 +85,7 @@ async function main() {
   const program = new Program(
     idl,
     provider,
-  ) as Program<McapepePresale>;
+  ) as Program<McpepePresale>;
 
   const [presaleConfig] = PublicKey.findProgramAddressSync(
     [Buffer.from("config")],

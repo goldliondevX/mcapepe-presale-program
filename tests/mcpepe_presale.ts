@@ -17,22 +17,22 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
-import type { McapepePresale } from "../target/types/mcapepe_presale";
+import type { McpepePresale } from "../target/types/mcpepe_presale";
 
-describe("mcapepe_presale", () => {
+describe("mcpepe_presale", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const idl = JSON.parse(
     fs.readFileSync(
-      path.join(process.cwd(), "target/idl/mcapepe_presale.json"),
+      path.join(process.cwd(), "target/idl/mcpepe_presale.json"),
       "utf-8",
     ),
   );
   const program = new anchor.Program(
     idl,
     provider,
-  ) as Program<McapepePresale>;
+  ) as Program<McpepePresale>;
 
   const admin = provider.wallet as anchor.Wallet;
   const user = Keypair.generate();

@@ -12,7 +12,7 @@ pub use state::*;
 declare_id!("4ZD9bhpiwwaL1hxutSmW2hcHaAVzru28niPXhqXrEjLP");
 
 #[program]
-pub mod mcapepe_presale {
+pub mod mcpepe_presale {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {

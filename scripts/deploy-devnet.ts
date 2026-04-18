@@ -2,7 +2,7 @@
 /// <reference types="node" />
 
 /**
- * Build and deploy `mcapepe_presale` to devnet.
+ * Build and deploy `mcpepe_presale` to devnet.
  *
  * Usage:
  *   yarn deploy:devnet

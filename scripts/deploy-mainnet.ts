@@ -2,7 +2,7 @@
 /// <reference types="node" />
 
 /**
- * Build and deploy `mcapepe_presale` to mainnet-beta.
+ * Build and deploy `mcpepe_presale` to mainnet-beta.
  *
  * Usage:
  *   yarn deploy:mainnet
