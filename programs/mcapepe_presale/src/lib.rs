@@ -9,7 +9,7 @@ mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("7FQtBKKbwZsroxZ1inaQNdQiQKoy7shgGtMagVDVx769");
+declare_id!("4ZD9bhpiwwaL1hxutSmW2hcHaAVzru28niPXhqXrEjLP");
 
 #[program]
 pub mod mcapepe_presale {
@@ -21,6 +21,10 @@ pub mod mcapepe_presale {
 
     pub fn set_treasury(ctx: Context<SetTreasury>, new_treasury: Pubkey) -> Result<()> {
         instructions::set_treasury::handler(ctx, new_treasury)
+    }
+
+    pub fn transfer_admin(ctx: Context<TransferAdmin>, new_admin: Pubkey) -> Result<()> {
+        instructions::transfer_admin::handler(ctx, new_admin)
     }
 
     pub fn add_allowed_mint(ctx: Context<AddAllowedMint>) -> Result<()> {

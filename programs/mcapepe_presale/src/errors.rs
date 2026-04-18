@@ -24,4 +24,8 @@ pub enum ErrorCode {
     InvalidVault,
     #[msg("Nothing to withdraw: vault is empty")]
     NothingToWithdraw,
+    #[msg("New admin must be a non-default pubkey")]
+    InvalidAdmin,
+    #[msg("New admin is already the current admin")]
+    SameAdmin,
 }

@@ -352,4 +352,41 @@ describe("mcapepe_presale", () => {
     }
     assert.isTrue(failed);
   });
+
+  it("transfer_admin moves authority and restores", async () => {
+    const newAdmin = Keypair.generate();
+    const sig = await provider.connection.requestAirdrop(
+      newAdmin.publicKey,
+      LAMPORTS_PER_SOL / 10,
+    );
+    await provider.connection.confirmTransaction(sig);
+
+    await program.methods
+      .transferAdmin(newAdmin.publicKey)
+      .accounts({ admin: admin.publicKey })
+      .rpc();
+
+    let cfg = await program.account.presaleConfig.fetch(pda.presaleConfig());
+    assert.equal(cfg.admin.toBase58(), newAdmin.publicKey.toBase58());
+
+    let oldAdminBlocked = false;
+    try {
+      await program.methods
+        .setTreasury(treasury.publicKey)
+        .accounts({ admin: admin.publicKey })
+        .rpc();
+    } catch {
+      oldAdminBlocked = true;
+    }
+    assert.isTrue(oldAdminBlocked);
+
+    await program.methods
+      .transferAdmin(admin.publicKey)
+      .accounts({ admin: newAdmin.publicKey })
+      .signers([newAdmin])
+      .rpc();
+
+    cfg = await program.account.presaleConfig.fetch(pda.presaleConfig());
+    assert.equal(cfg.admin.toBase58(), admin.publicKey.toBase58());
+  });
 });
